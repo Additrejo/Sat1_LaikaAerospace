@@ -12,8 +12,8 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // Definir los pines UART
-#define RX_PIN 16
-#define TX_PIN 17
+#define RX_PIN 1
+#define TX_PIN 3
 
 // Crear el objeto serial para UART
 HardwareSerial mySerial(2); // Usar UART2 para la comunicación con el GPS
