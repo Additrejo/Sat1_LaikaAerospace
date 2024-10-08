@@ -90,6 +90,8 @@ void loop() {
   sensors_event_t humidity, temp_aht;
   aht.getEvent(&humidity, &temp_aht);
 
+  // Leer presión atmosférica del BMP280
+  float pressure = bmp.readPressure() / 100.0F; // Convertir a hPa
   // Leer altitud del BMP280
   float altitude = bmp.readAltitude(SEALEVELPRESSURE_HPA);
 
@@ -104,6 +106,10 @@ void loop() {
   display.print("Hum: ");
   display.print(humidity.relative_humidity);
   display.println(" %");
+
+  display.print("Press: ");
+  display.print(pressure);  // Mostrar presión
+  display.println(" hPa");
 
   display.print("Alt: ");
   display.print(altitude);
