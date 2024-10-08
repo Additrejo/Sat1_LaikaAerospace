@@ -16,12 +16,10 @@ Adafruit_MPU6050 mpu;
 #define SCREEN_HEIGHT 64
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-// Definir los pines de los LEDs, el buzzer y el botón
+// Definir los pines de los LEDs y el buzzer
 int ledPin = 2;         // LED general
-int mpuLedPin = 4;      // LED específico para MPU6050
-int buttonPin = 15;     // Pin del botón
+int mpuLedPin = 33;     // LED específico para MPU6050
 int buzzerPin = 13;     // Pin del buzzer en ESP32
-bool displayMPU = false;
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 
@@ -32,9 +30,6 @@ void setup() {
   pinMode(ledPin, OUTPUT);
   pinMode(mpuLedPin, OUTPUT);
   pinMode(buzzerPin, OUTPUT);
-
-  // Configurar el pin del botón como entrada
-  pinMode(buttonPin, INPUT_PULLUP);
 
   // Hacer sonar el buzzer durante 1 segundo al inicio
   digitalWrite(buzzerPin, HIGH);
@@ -71,114 +66,100 @@ void setup() {
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
+
+  // Rotar la pantalla 180 grados
+  display.setRotation(2);  
+
+  // Mostrar el texto inicial
   display.setCursor(0, 0);
-  display.println("OLED Iniciada!");
+  display.println("Laika Aerospace");
+  display.println("- Laiksat -");
+  display.setCursor(0, 20);
+  display.println("Addi T.");
+  display.println("Julian N.");
+  display.println("Juan Hdz.");
   display.display();
-  delay(2000);
+  delay(4000); // Esperar 4 segundos para mostrar el texto
 }
 
 void loop() {
-  // Leer el estado del botón
-  if (digitalRead(buttonPin) == LOW) {
-    displayMPU = !displayMPU; // Cambiar entre datos de sensores
-    delay(200); // Debounce del botón
-  }
-
   // Encender el LED general mientras se envían los datos
   digitalWrite(ledPin, HIGH);
 
-  if (displayMPU) {
-    // Leer datos del sensor MPU6050
-    if (mpuLedPin != -1) {
-      sensors_event_t a, g, temp;
-      mpu.getEvent(&a, &g, &temp);
+  // Leer datos del sensor AHT20
+  sensors_event_t humidity, temp_aht;
+  aht.getEvent(&humidity, &temp_aht);
 
-      // Parpadear el LED específico para MPU6050
-      digitalWrite(mpuLedPin, HIGH);
-      delay(100); // Encendido del LED por 100 ms
-      digitalWrite(mpuLedPin, LOW);
-      delay(100); // Apagado del LED por 100 ms
+  // Leer altitud del BMP280
+  float altitude = bmp.readAltitude(SEALEVELPRESSURE_HPA);
 
-      // Mostrar datos en la pantalla OLED
-      display.clearDisplay();
-      display.setTextSize(1);
-      display.setCursor(0, 28); 
-      display.println("MPU6050");
-      display.print("Acel X: ");
-      display.print(a.acceleration.x);
-      display.println(" m/s^2");
-      display.print("Acel Y: ");
-      display.print(a.acceleration.y);
-      display.println(" m/s^2");
-      display.print("Acel Z: ");
-      display.print(a.acceleration.z);
-      display.println(" m/s^2");
+  // Mostrar datos de temperatura y humedad en la pantalla OLED
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0, 0); 
+  display.println("Temp: ");
+  display.print(temp_aht.temperature);
+  display.println(" C");
 
-      // Enviar datos al monitor serial
-      Serial.println("Datos MPU6050:");
-      Serial.print("Acel X: ");
-      Serial.print(a.acceleration.x);
-      Serial.println(" m/s^2");
-      Serial.print("Acel Y: ");
-      Serial.print(a.acceleration.y);
-      Serial.println(" m/s^2");
-      Serial.print("Acel Z: ");
-      Serial.print(a.acceleration.z);
-      Serial.println(" m/s^2");
-    } else {
-      // Si el MPU6050 no está conectado, mostrar un mensaje de error en la pantalla OLED
-      display.clearDisplay();
-      display.setTextSize(1);
-      display.setCursor(0, 28); 
-      display.println("MPU6050 NO");
-      display.println("CONEXION");
-    }
-  } else {
-    // Apagar el LED específico para MPU6050 cuando no se está mostrando información del MPU6050
-    if (mpuLedPin != -1) {
-      digitalWrite(mpuLedPin, LOW);
-    }
+  display.print("Hum: ");
+  display.print(humidity.relative_humidity);
+  display.println(" %");
 
-    // Leer datos del sensor AHT20
-    sensors_event_t humidity, temp_aht;
-    aht.getEvent(&humidity, &temp_aht);
+  display.print("Alt: ");
+  display.print(altitude);
+  display.println(" m");
 
-    // Leer altitud del BMP280
-    float altitude = bmp.readAltitude(SEALEVELPRESSURE_HPA);
+  display.display(); // Actualizar la pantalla
+  delay(2000); // Esperar 2 segundos
 
-    // Mostrar datos en la pantalla OLED
+  // Leer datos del sensor MPU6050
+  if (mpuLedPin != -1) {
+    sensors_event_t a, g, temp;
+    mpu.getEvent(&a, &g, &temp);
+
+    // Parpadear el LED específico para MPU6050
+    digitalWrite(mpuLedPin, HIGH);
+    delay(100); // Encendido del LED por 100 ms
+    digitalWrite(mpuLedPin, LOW);
+    delay(100); // Apagado del LED por 100 ms
+
+    // Mostrar datos del MPU6050 en la pantalla OLED
     display.clearDisplay();
     display.setTextSize(1);
-    display.setCursor(0, 38); 
-    display.print("Temp: ");
-    display.print(temp_aht.temperature);
-    display.println(" C");
-
-    display.print("Hum: ");
-    display.print(humidity.relative_humidity);
-    display.println(" %");
-
-    display.print("Alt: ");
-    display.print(altitude);
-    display.println(" m");
+    display.setCursor(0, 0); 
+    display.println("MPU6050");
+    display.print("Acel X: ");
+    display.print(a.acceleration.x);
+    display.println(" m/s^2");
+    display.print("Acel Y: ");
+    display.print(a.acceleration.y);
+    display.println(" m/s^2");
+    display.print("Acel Z: ");
+    display.print(a.acceleration.z);
+    display.println(" m/s^2");
 
     // Enviar datos al monitor serial
-    Serial.println("Datos AHT20 y BMP280:");
-    Serial.print("Temperatura AHT20: ");
-    Serial.print(temp_aht.temperature);
-    Serial.println(" C");
-    Serial.print("Humedad: ");
-    Serial.print(humidity.relative_humidity);
-    Serial.println(" %");
-    Serial.print("Altitud: ");
-    Serial.print(altitude);
-    Serial.println(" m");
+    Serial.println("Datos MPU6050:");
+    Serial.print("Acel X: ");
+    Serial.print(a.acceleration.x);
+    Serial.println(" m/s^2");
+    Serial.print("Acel Y: ");
+    Serial.print(a.acceleration.y);
+    Serial.println(" m/s^2");
+    Serial.print("Acel Z: ");
+    Serial.print(a.acceleration.z);
+    Serial.println(" m/s^2");
+  } else {
+    // Si el MPU6050 no está conectado, mostrar un mensaje de error en la pantalla OLED
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setCursor(0, 0); 
+    display.println("MPU6050 NO");
+    display.println("CONEXION");
   }
 
   display.display(); // Actualizar la pantalla
-
-  // Apagar el LED general después de enviar los datos
-  digitalWrite(ledPin, LOW);
+  digitalWrite(ledPin, LOW); // Apagar el LED general después de enviar los datos
 
   delay(2000); // Esperar 2 segundos antes de la siguiente lectura
 }
